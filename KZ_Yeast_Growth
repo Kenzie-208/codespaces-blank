@@ -1,0 +1,258 @@
+%Starting Template
+clear;
+clc; 
+close all;
+
+%Top code
+control_R_intensity = zeros(1,4);
+Col_200_R_intensity = zeros(1,4);
+Col_500_R_intensity = zeros(1,4);
+Col200_Flu_R_intensity = zeros(1,4);
+Col500_Flu_R_intensity = zeros(1,4);
+
+control_R_SEM = zeros(1,4);
+Col_200_R_SEM = zeros(1,4);
+Col_500_R_SEM = zeros(1,4);
+Col200_Flu_R_SEM = zeros(1,4);
+Col500_Flu_R_SEM = zeros(1,4);
+number_of_spots = 16;
+
+for i=1:4
+%CONTROL SET
+    control_files= sprintf('control-1%04d.tif', i); %string file
+    control_image= imread(control_files);
+    control_image = double(control_image);   %filter image noise
+    control_noise_filter=fspecial('gaussian', 7,1);
+    control_fil_img= imfilter(control_image, control_noise_filter, 'symmetric');
+   
+    %produce 2D matrix with only red column
+    control_red2D = control_fil_img(:,:,1); %1 is the red channel, extracting from whole image
+
+    %Convert background image for processing and extract red column
+    control_background_image= imread('control-10000.tif'); %Use the time 0 image to remove remaining background
+    control_background_image = double(control_background_image); % Convert background image to double for processing
+    control_background_noise_filter=fspecial('gaussian', 7,1);
+    control_background_fil_img= imfilter(control_background_image, control_background_noise_filter, 'symmetric');
+
+    control_red2D_background_image= control_background_fil_img(:,:,1); %extract red column
+    
+    %Finally remove background
+    control_processed_image = control_red2D-control_red2D_background_image; %remove background
+    
+    %Convert matrix to grayscale image, mask to isolate cell region 
+    control_norm=mat2gray(control_processed_image); %convert matrix to grayscale
+    T=graythresh(control_norm); %graythresholding 
+    BW_control=imbinarize(control_norm, T); %mask
+    BW_control=imfill(BW_control, 'holes'); %fill the cell region
+    control_isolated= control_norm.*BW_control; %isolate cells only
+
+    control_nonzero_r= control_isolated(control_isolated>0); %array of red intensities greater than 0 
+    
+    total_control_fluorescence(i)=sum(control_nonzero_r); %i is the time stamp, starting at 12 hours, 24 hours, 36 hours, 48 hours
+    avg_control_cell_P= total_control_fluorescence(i)/number_of_spots;
+    control_R_intensity(i) = avg_control_cell_P; 
+
+    %Standard Deviation and Error 
+    control_count=numel(control_nonzero_r);
+    control_SEM= std(control_nonzero_r)/sqrt(control_count);
+    control_R_SEM(i)=control_SEM;
+
+
+%200nM Colchicine set
+    Col_200_files = sprintf('200_nM_colchicine-1%04d.tif', i); % string file
+    Col_200_image = imread(Col_200_files);
+    Col_200_image = double(Col_200_image);   %filter image noise
+    Col_200_noise_filter = fspecial('gaussian', 7,1);
+    Col_200_fil_img = imfilter(Col_200_image, Col_200_noise_filter, 'symmetric');
+   
+    %produce 2D matrix with only red column
+    Col_200_red2D = Col_200_fil_img(:,:,1); %1 is the red channel, extracting from whole image
+
+    %Convert background image for processing and extract red column
+    Col_200_background_image = imread('200_nM_colchicine-10000.tif'); %Use the time 0 image to remove remaining background
+    Col_200_background_image = double(Col_200_background_image); % Convert background image to double for processing
+    Col_200_background_noise_filter = fspecial('gaussian', 7,1);
+    Col_200_background_fil_img = imfilter(Col_200_background_image, Col_200_background_noise_filter, 'symmetric');
+
+    Col_200_red2D_background_image = Col_200_background_fil_img(:,:,1); %extract red column
+    
+    %Finally remove background
+    Col_200_processed_image = Col_200_red2D - Col_200_red2D_background_image; %remove background
+    
+    %Convert matrix to grayscale image, mask to isolate cell region 
+    Col_200_processed_image=max(Col_200_processed_image, 0); %remove negative values
+    Col_200_norm = mat2gray(Col_200_processed_image); %convert matrix to grayscale
+    T2 = graythresh(Col_200_norm); %graythresholding 
+    BW_Col_200 = imbinarize(Col_200_norm, T2); %mask
+    BW_Col_200 = imfill(BW_Col_200, 'holes'); %fill the cell region
+    Col_200_isolated = Col_200_norm .* BW_Col_200; %isolate cells only
+
+    Col_200_nonzero_r = Col_200_isolated(Col_200_isolated > 0); %array of red intensities greater than 0 
+    
+    total_Col_200_fluorescence(i) = sum(Col_200_nonzero_r); %i is the time stamp, starting at 12, 24, 36, 48 hours
+    avg_Col_200_cell_P = total_Col_200_fluorescence(i) / number_of_spots;
+    Col_200_R_intensity(i) = avg_Col_200_cell_P; 
+
+    %Standard Deviation and Error 
+    Col_200_count = numel(Col_200_nonzero_r);
+    Col_200_SEM = std(Col_200_nonzero_r) / sqrt(Col_200_count);
+    Col_200_R_SEM(i) = Col_200_SEM;
+
+
+%500nM Colchicine set
+    Col_500_files = sprintf('500_nM_colchicine-1%04d.tif', i); %string file
+    Col_500_image = imread(Col_500_files);
+    Col_500_image = double(Col_500_image);   %filter image noise
+    Col_500_noise_filter = fspecial('gaussian', 7,1);
+    Col_500_fil_img = imfilter(Col_500_image, Col_500_noise_filter, 'symmetric');
+   
+    %produce 2D matrix with only red column
+    Col_500_red2D = Col_500_fil_img(:,:,1); %1 is the red channel, extracting from whole image
+
+    %Convert background image for processing and extract red column
+    Col_500_background_image = imread('500_nM_colchicine-10000.tif'); %Use the time 0 image to remove remaining background
+    Col_500_background_image = double(Col_500_background_image); % Convert background image to double for processing
+    Col_500_background_noise_filter = fspecial('gaussian', 7,1);
+    Col_500_background_fil_img = imfilter(Col_500_background_image, Col_500_background_noise_filter, 'symmetric');
+
+    Col_500_red2D_background_image = Col_500_background_fil_img(:,:,1); %extract red column
+    
+    %Finally remove background
+    Col_500_processed_image = Col_500_red2D - Col_500_red2D_background_image; %remove background
+    
+    %Convert matrix to grayscale image, mask to isolate cell region 
+    Col_500_processed_image=max(Col_500_processed_image, 0); %remove negative values
+    Col_500_norm = mat2gray(Col_500_processed_image); %convert matrix to grayscale
+    T3 = graythresh(Col_500_norm); %graythresholding 
+    BW_Col_500 = imbinarize(Col_500_norm, T3); %mask
+    BW_Col_500 = imfill(BW_Col_500, 'holes'); %fill the cell region
+    Col_500_isolated = Col_500_norm .* BW_Col_500; %isolate cells only
+
+    Col_500_nonzero_r = Col_500_isolated(Col_500_isolated > 0); %array of red intensities greater than 0 
+    
+    total_Col_500_fluorescence(i) = sum(Col_500_nonzero_r); %i is the time stamp, starting at 12, 24, 36, 48 hours
+    avg_Col_500_cell_P = total_Col_500_fluorescence(i) / number_of_spots;
+    Col_500_R_intensity(i) = avg_Col_500_cell_P; 
+
+    %Standard Deviation and Error
+    Col_500_count = numel(Col_500_nonzero_r);
+    Col_500_SEM = std(Col_500_nonzero_r) / sqrt(Col_500_count);
+    Col_500_R_SEM(i) = Col_500_SEM;
+
+%200nM Colchicine + flu set
+    Col200_Flu_files = sprintf('200_nM_colch_plus_flu-1%04d.tif', i); %string file
+    Col200_Flu_image = imread(Col200_Flu_files);
+    Col200_Flu_image = double(Col200_Flu_image);   %filter image noise
+    Col200_Flu_noise_filter = fspecial('gaussian', 7, 1);
+    Col200_Flu_fil_img = imfilter(Col200_Flu_image, Col200_Flu_noise_filter, 'symmetric');
+   
+    %produce 2D matrix with only red column
+    Col200_Flu_red2D = Col200_Flu_fil_img(:,:,1); %1 is the red channel
+
+    %Convert background image for processing and extract red column
+    Col200_Flu_background_image = imread('200_nM_colch_plus_flu-10000.tif'); %time 0 background
+    Col200_Flu_background_image = double(Col200_Flu_background_image);
+    Col200_Flu_background_noise_filter = fspecial('gaussian', 7, 1);
+    Col200_Flu_background_fil_img = imfilter(Col200_Flu_background_image, Col200_Flu_background_noise_filter, 'symmetric');
+
+    Col200_Flu_red2D_background_image = Col200_Flu_background_fil_img(:,:,1); %extract red column
+    
+    %Finally remove background
+    Col200_Flu_processed_image = Col200_Flu_red2D - Col200_Flu_red2D_background_image;
+    
+    %Convert matrix to grayscale image, mask to isolate cell region 
+    Col200_Flu_processed_image=max(Col200_Flu_processed_image, 0); %remove negative values
+    Col200_Flu_norm = mat2gray(Col200_Flu_processed_image);
+    T4 = graythresh(Col200_Flu_norm);
+    BW_Col200_Flu = imbinarize(Col200_Flu_norm, T4);
+    BW_Col200_Flu = imfill(BW_Col200_Flu, 'holes');
+    Col200_Flu_isolated = Col200_Flu_norm .* BW_Col200_Flu;
+
+    Col200_Flu_nonzero_r = Col200_Flu_isolated(Col200_Flu_isolated > 0);
+    
+    total_Col200_Flu_fluorescence(i) = sum(Col200_Flu_nonzero_r);
+    avg_Col200_Flu_cell_P = total_Col200_Flu_fluorescence(i) / number_of_spots;
+    Col200_Flu_R_intensity(i) = avg_Col200_Flu_cell_P; 
+
+    %Standard Deviation and Error 
+    Col200_Flu_count = numel(Col200_Flu_nonzero_r);
+    Col200_Flu_SEM = std(Col200_Flu_nonzero_r) / sqrt(Col200_Flu_count);
+    Col200_Flu_R_SEM(i) = Col200_Flu_SEM;
+
+
+%500nM Colchicine + flu set
+    Col500_Flu_files = sprintf('500_nM_colch_plus_flu-1%04d.tif', i); %string file
+    Col500_Flu_image = imread(Col500_Flu_files);
+    Col500_Flu_image = double(Col500_Flu_image);   %filter image noise
+    Col500_Flu_noise_filter = fspecial('gaussian', 7, 1);
+    Col500_Flu_fil_img = imfilter(Col500_Flu_image, Col500_Flu_noise_filter, 'symmetric');
+   
+    %produce 2D matrix with only red column
+    Col500_Flu_red2D = Col500_Flu_fil_img(:,:,1); %1 is the red channel
+
+    %Convert background image for processing and extract red column
+    Col500_Flu_background_image = imread('500_nM_colch_plus_flu-10000.tif'); %time 0 background
+    Col500_Flu_background_image = double(Col500_Flu_background_image);
+    Col500_Flu_background_noise_filter = fspecial('gaussian', 21, 3);
+    Col500_Flu_background_fil_img = imfilter(Col500_Flu_background_image, Col500_Flu_background_noise_filter, 'symmetric');
+
+    Col500_Flu_red2D_background_image = Col500_Flu_background_fil_img(:,:,1); %extract red column
+    
+    %Finally remove background
+    Col500_Flu_processed_image = Col500_Flu_red2D - Col500_Flu_red2D_background_image;
+    
+    %Convert matrix to grayscale image, mask to isolate cell region 
+    Col500_Flu_processed_image=max(Col500_Flu_processed_image, 0); %remove negative values
+    Col500_Flu_norm = mat2gray(Col500_Flu_processed_image);  %normalize the image
+    T5 = graythresh(Col500_Flu_norm);
+    BW_Col500_Flu = imbinarize(Col500_Flu_norm, T5);
+    BW_Col500_Flu = imfill(BW_Col500_Flu, 'holes');
+    Col500_Flu_isolated = Col500_Flu_norm .* BW_Col500_Flu;
+
+    Col500_Flu_nonzero_r = Col500_Flu_isolated(Col500_Flu_isolated > 0);
+    
+    total_Col500_Flu_fluorescence(i) = sum(Col500_Flu_nonzero_r);
+    avg_Col500_Flu_cell_P = total_Col500_Flu_fluorescence(i) / number_of_spots;
+    Col500_Flu_R_intensity(i) = avg_Col500_Flu_cell_P; 
+
+    %Standard Deviation and Error 
+    Col500_Flu_count = numel(Col500_Flu_nonzero_r);
+    Col500_Flu_SEM = std(Col500_Flu_nonzero_r) / sqrt(Col500_Flu_count);
+    Col500_Flu_R_SEM(i) = Col500_Flu_SEM;
+
+if i == 4  %check on the image masking
+    figure;
+    subplot(2,3,1); imshow(control_isolated, []); title('Control');
+    subplot(2,3,2); imshow(Col_200_isolated, []); title('Colchicine 200');
+    subplot(2,3,3); imshow(Col_500_isolated, []); title('Colchicine 500');
+    subplot(2,3,4); imshow(Col200_Flu_isolated, []); title('Colchicine 200 + Flu');
+    subplot(2,3,5); imshow(Col500_Flu_isolated, []); title('Colchicine 500 + Flu');
+
+end
+
+end
+
+%Display line graph with average red intensity fluorescence for each experiment group at each time point
+figure;
+hold on
+time_points = [12 24 36 48];
+
+%Display lines and error bars (error bars are very small)
+errorbar(time_points, control_R_intensity, control_R_SEM, 'm-.*', 'MarkerSize', 10, 'LineWidth', 2)
+errorbar(time_points, Col_200_R_intensity, Col_200_R_SEM, 'c-.s', 'MarkerSize', 10, 'LineWidth', 2)
+errorbar(time_points, Col_500_R_intensity, Col_500_R_SEM, 'r-.^', 'MarkerSize', 10, 'LineWidth', 2)
+errorbar(time_points, Col200_Flu_R_intensity, Col200_Flu_R_SEM, 'g-.h', 'MarkerSize', 10, 'LineWidth', 2)
+errorbar(time_points, Col500_Flu_R_intensity, Col500_Flu_R_SEM, 'b-o', 'MarkerSize', 10, 'LineWidth', 2)
+
+xlabel('Time in Hours')
+ylabel('Mean Red Fluorescence Intensity')
+
+legend('Control (no drug)', ...
+       '200 nM Colchicine', ...
+       '500 nM Colchicine', ...
+       '200 nM Colchicine + 2 ug Fluconazole', ...
+       '500 nM Colchicine + 2 ug Fluconazole', ...
+       'Location', 'northwest');
+grid on
+
+hold off
